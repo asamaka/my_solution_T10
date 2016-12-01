@@ -1,90 +1,130 @@
+
+/*
+ * Copyright (C) 2016 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.example.android.background.utilities;
 
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.drawable.BitmapDrawable;
-import android.support.v7.app.NotificationCompat;
+import android.support.v4.app.NotificationCompat;
+import android.support.v4.content.ContextCompat;
 
 import com.example.android.background.MainActivity;
 import com.example.android.background.R;
+import com.example.android.background.sync.ReminderTasks;
+import com.example.android.background.sync.WaterReminderIntentService;
 
 /**
  * Utility class for creating hydration notifications
  */
 public class NotificationUtils {
 
-    private static final int ID_WATER_NOTIFICATION = 123;
+    /*
+     * This notification ID can be used to access our notification after we've displayed it. This
+     * can be handy when we need to cancel the notification, or perhaps update it. This number is
+     * arbitrary and can be set to whatever you like. 1138 is in no way significant.
+     */
+    private static final int WATER_REMINDER_NOTIFICATION_ID = 1138;
+    /**
+     * This pending intent id is used to uniquely reference the pending intent
+     */
+    private static final int WATER_REMINDER_PENDING_INTENT_ID = 3417;
 
-    // COMPLETED (11) Create a helper method called remindUserBecauseCharging, which takes a context, and
-    // then calls remindUser. You should pass in the charging_reminder_notification_title String for
-    // the title and the charging_reminder_notification_body String for the text.
-    public static void remindUserBecauseCharging(Context context){
-        remindUser(
-                context,
-                context.getString(R.string.charging_reminder_notification_title),
-                context.getString(R.string.charging_reminder_notification_body)
-        );
+    public static void remindUserBecauseCharging(Context context) {
+        String chargingTitle = context.getString(R.string.charging_reminder_notification_title);
+        String chargingText = context.getString(R.string.charging_reminder_notification_body);
+        remindUser(context, chargingTitle, chargingText);
     }
 
+    //  COMPLETED (1) Create a method to clear all notifications
+    public static void clearAllNotifications(Context context){
+        NotificationManager nm = (NotificationManager)
+                context.getSystemService(Context.NOTIFICATION_SERVICE);
 
-    // COMPLETED (7) Create a method called remindUser which takes a Context and a String title and text.
-    // This method will create notifications with the title and text supplied. It might be helpful
-    // to take a look at this guide to see an example of what the code in this method will look like:
-    // https://developer.android.com/training/notify-user/build-notification.html
-    public static void remindUser(Context context, String title, String text) {
-        // COMPLETED (8) In the remindUser method use NotificationCompat.Builder to create a notification
-        // that:
-        // - has a color of R.colorPrimary - use ContextCompat.getColor to get a compatible color
-        // - has ic_launcher as the small icon
-        // - uses icon returned by the largeIcon helper method as the large icon
-        // - sets the title and text using the parameters of this method
-        // - sets the style to NotificationCompat.BigTextStyle().bigText(text)
-        // - uses the content intent returned by the contentIntent helper method for the contentIntent
-        // - automatically cancels the notification when the notification is clicked
-        NotificationCompat.Builder nBuilder = new NotificationCompat.Builder(context);
-        nBuilder.setColor(context.getResources().getColor(R.color.colorPrimary));
-        nBuilder.setSmallIcon(R.mipmap.ic_launcher);
-        nBuilder.setLargeIcon(largeIcon(context));
-        nBuilder.setContentTitle(title);
-        nBuilder.setContentText(text);
-        nBuilder.setStyle(new NotificationCompat.BigTextStyle().bigText(text));
-        nBuilder.setContentIntent(contentIntent(context));
-        nBuilder.setAutoCancel(true);
-        // COMPLETED (9) Get a NotificationManager, using context.getSystemService(Context.NOTIFICATION_SERVICE);
-        NotificationManager nm = (NotificationManager)context.getSystemService(context.NOTIFICATION_SERVICE);
-        // COMPLETED (10) Trigger the notification by calling notify on the NotificationManager.
-        // Pass in a unique ID of your choosing for the notification and notificationBuilder.build()
-        nm.notify(ID_WATER_NOTIFICATION,nBuilder.build());
-
+        nm.cancelAll();
     }
-    // COMPLETED (1) Create a helper method called contentIntent with a single parameter for a Context. It
-    // should return a PendingIntent. This method will create the pending intent which will trigger when
-    // the notification is pressed. This pending intent should open up the MainActivity.
+
+    private static void remindUser(Context context, String title, String text) {
+        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(context)
+                .setColor(ContextCompat.getColor(context, R.color.colorPrimary))
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setLargeIcon(largeIcon(context))
+                .setContentTitle(title)
+                .setContentText(text)
+                .setStyle(new NotificationCompat.BigTextStyle().bigText(text))
+                .setContentIntent(contentIntent(context))
+                .addAction(ignoreReminderAction(context))
+                .addAction(drinkWaterAction(context))
+                .setAutoCancel(true);
+        NotificationManager notificationManager = (NotificationManager)
+                context.getSystemService(Context.NOTIFICATION_SERVICE);
+
+        notificationManager.notify(WATER_REMINDER_NOTIFICATION_ID, notificationBuilder.build());
+    }
+
+    //  COMPLETED (5) Add a static method called ignoreReminderAction
+    public static NotificationCompat.Action ignoreReminderAction(Context context){
+    //      COMPLETED (6) Create an Intent to launch WaterReminderIntentService
+        Intent reminderIntent = new Intent(context, WaterReminderIntentService.class);
+    //      COMPLETED (7) Set the action of the intent to designate you want to dismiss the notification
+        reminderIntent.setAction(ReminderTasks.ACTION_DISMISS_NOTIFICATION);
+    //      COMPLETED (8) Create a PendingIntent from the intent to launch WaterReminderIntentService
+        PendingIntent pIntent = PendingIntent.getActivity(context,14,reminderIntent,PendingIntent.FLAG_UPDATE_CURRENT);
+    //      COMPLETED (9) Create an Action for the user to ignore the notification (and dismiss it)
+        NotificationCompat.Action ignoreReminderAction = new NotificationCompat.Action(R.drawable.ic_cancel_black_24px,
+                "No, thanks.",
+                pIntent);
+    //      COMPLETED (10) Return the action
+        return ignoreReminderAction;
+    }
+
+    //  COMPLETED (11) Add a static method called drinkWaterAction
+    private static NotificationCompat.Action drinkWaterAction(Context context) {
+        //      COMPLETED (12) Create an Intent to launch WaterReminderIntentService
+        Intent drinkIntent = new Intent(context, WaterReminderIntentService.class);
+        //      COMPLETED (13) Set the action of the intent to designate you want to increment the water count
+        drinkIntent.setAction(ReminderTasks.ACTION_INCREMENT_WATER_COUNT);
+        //      COMPLETED (14) Create a PendingIntent from the intent to launch WaterReminderIntentService
+        PendingIntent pIntent = PendingIntent.getActivity(context,1,drinkIntent,PendingIntent.FLAG_UPDATE_CURRENT);
+        //      COMPLETED (15) Create an Action for the user to tell us they've had a glass of water
+        NotificationCompat.Action drinkWaterAction = new NotificationCompat.Action(R.drawable.ic_local_drink_black_24px,
+                "I did it!",
+                pIntent);
+        //      COMPLETED (16) Return the action
+        return drinkWaterAction;
+    }
+
     private static PendingIntent contentIntent(Context context) {
-        // COMPLETED (2) Create an intent that opens up the MainActivity
-        Intent mainActivityIntent = new Intent(context, MainActivity.class);
-        // COMPLETED (3) Create a PendingIntent using getActivity that:
-        // - Take the context passed in as a parameter
-        // - Takes an unique integer ID for the pending intent (you can create a constant for
-        //   this integer above
-        // - Takes the intent to open the MainActivity you just created; this is what is triggered
-        //   when the notification is triggered
-        // - Has the flag FLAG_UPDATE_CURRENT, so that if the intent is created again, keep the
-        // intent but update the data
-        return PendingIntent.getActivity(context,ID_WATER_NOTIFICATION,mainActivityIntent,PendingIntent.FLAG_UPDATE_CURRENT);
+        Intent startActivityIntent = new Intent(context, MainActivity.class);
+
+        return PendingIntent.getActivity(
+                context,
+                WATER_REMINDER_PENDING_INTENT_ID,
+                startActivityIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT);
     }
 
-    // COMPLETED (4) Create a helper method called largeIcon which takes in a Context as a parameter and
-    // returns a Bitmap. This method is necessary to decode a bitmap needed for the notification.
-    private static Bitmap largeIcon(Context context) {
-        // COMPLETED (5) Get a Resources object from the context
-        // COMPLETED (6) Create and return a bitmap using BitmapFactory.decodeResource, passing in the
-        // resources object and
-        return BitmapFactory.decodeResource(context.getResources(), R.drawable.ic_local_drink_black_24px);
 
+    private static Bitmap largeIcon(Context context) {
+        Resources res = context.getResources();
+        Bitmap largeIcon = BitmapFactory.decodeResource(res, R.drawable.ic_local_drink_black_24px);
+        return largeIcon;
     }
 }
