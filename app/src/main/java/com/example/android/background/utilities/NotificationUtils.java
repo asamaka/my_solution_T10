@@ -55,6 +55,7 @@ public class NotificationUtils {
         remindUser(context, chargingTitle, chargingText);
     }
 
+    //  COMPLETED (1) Create a method to clear all notifications
     public static void clearAllNotifications(Context context) {
         NotificationManager notificationManager = (NotificationManager)
                 context.getSystemService(Context.NOTIFICATION_SERVICE);
@@ -81,31 +82,43 @@ public class NotificationUtils {
         /* WATER_REMINDER_NOTIFICATION_ID allows you to update or cancel the notification later on */
         notificationManager.notify(WATER_REMINDER_NOTIFICATION_ID, notificationBuilder.build());
     }
+    //  COMPLETED (5) Add a static method called ignoreReminderAction
     private static Action ignoreReminderAction(Context context) {
+        // COMPLETED (6) Create an Intent to launch WaterReminderIntentService
         Intent ignoreReminderIntent = new Intent(context, WaterReminderIntentService.class);
+        // COMPLETED (7) Set the action of the intent to designate you want to dismiss the notification
         ignoreReminderIntent.setAction(ReminderTasks.ACTION_DISMISS_NOTIFICATION);
+        // COMPLETED (8) Create a PendingIntent from the intent to launch WaterReminderIntentService
         PendingIntent ignoreReminderPendingIntent = PendingIntent.getService(
                 context,
                 14,
                 ignoreReminderIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT);
+        // COMPLETED (9) Create an Action for the user to ignore the notification (and dismiss it)
         Action ignoreReminderAction = new Action(R.drawable.ic_cancel_black_24px,
                 "No, thanks.",
                 ignoreReminderPendingIntent);
+        // COMPLETED (10) Return the action
         return ignoreReminderAction;
     }
 
+    //  COMPLETED (11) Add a static method called drinkWaterAction
     private static Action drinkWaterAction(Context context) {
+        // COMPLETED (12) Create an Intent to launch WaterReminderIntentService
         Intent incrementWaterCountIntent = new Intent(context, WaterReminderIntentService.class);
+        // COMPLETED (13) Set the action of the intent to designate you want to increment the water count
         incrementWaterCountIntent.setAction(ReminderTasks.ACTION_INCREMENT_WATER_COUNT);
+        // COMPLETED (14) Create a PendingIntent from the intent to launch WaterReminderIntentService
         PendingIntent incrementWaterPendingIntent = PendingIntent.getService(
                 context,
                 1,
                 incrementWaterCountIntent,
                 PendingIntent.FLAG_CANCEL_CURRENT);
+        // COMPLETED (15) Create an Action for the user to tell us they've had a glass of water
         Action drinkWaterAction = new Action(R.drawable.ic_local_drink_black_24px,
                 "I did it!",
                 incrementWaterPendingIntent);
+        // COMPLETED (16) Return the action
         return drinkWaterAction;
     }
 
